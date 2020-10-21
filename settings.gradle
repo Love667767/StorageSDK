@@ -1,0 +1,3 @@
+rootProject.name='StorageSDK'
+include ':app'
+include ':storage-sdk'
