@@ -4,10 +4,8 @@ import android.content.Context
 import com.elson.storage.helper.PathHelper
 import com.elson.storage.operator.file.DefaultFileOperator
 import com.elson.storage.operator.file.IFileOperator
-import com.elson.storage.operator.media.AudioMediaOperator
-import com.elson.storage.operator.media.IMediaOperator
-import com.elson.storage.operator.media.ImageMediaOperator
-import com.elson.storage.operator.media.VideoMediaOperator
+import com.elson.storage.operator.media.*
+import com.elson.storage.operator.permission.IPermissionOperator
 import java.io.File
 
 /**
@@ -15,13 +13,24 @@ import java.io.File
  * Date   : 2020/10/21
  * Desc   :
  */
-abstract class BaseRequest(protected var context: Context) {
+abstract class BaseRequest(var context: Context) {
 
     protected var mMediaOperator: IMediaOperator? = null
+    protected var mPermissionOperator: IPermissionOperator? = null
 
-    protected var mInputFile: File? = null
-    protected var mOutputFilePath: File? = null
-    protected var mOutputFileName: String? = null
+    internal var mInputFile: File? = null
+    internal var mOutputFilePath: File? = null
+    internal var mOutputFileName: String? = null
+    internal var mRelativePath : String? = null
+
+    protected var mSynSystemMedia: Boolean = false
+
+    // ------- Media props ---------
+    internal var mDuration: Long = 0L
+    internal var mWidth: Int = 0
+    internal var mHeight: Int = 0
+
+    // --------------------- Path ----------------------
 
     fun setFileDir(filePath: String? = null): BaseRequest {
         mOutputFilePath = PathHelper.getFileDir(context, filePath)
@@ -43,8 +52,32 @@ abstract class BaseRequest(protected var context: Context) {
         return this
     }
 
-    fun setCustomFilePath(filePath: String? = null): BaseRequest {
-        mOutputFilePath = PathHelper.getFileDir(context, filePath)
+    fun setInputFile(file: File?): BaseRequest {
+        mInputFile = file
+        return this
+    }
+
+    fun setCustomFilePath(outputFilePath: String? = null): BaseRequest {
+        mOutputFilePath = PathHelper.getFileDir(context, outputFilePath)
+        return this
+    }
+
+    fun setOutputFileName(fileName: String?): BaseRequest {
+        mOutputFileName = fileName
+        return this
+    }
+
+    fun getOutputFile(): File? {
+        if (mOutputFilePath == null || mOutputFileName == null) {
+            return null
+        }
+        return mOutputFilePath!!.resolve(mOutputFileName!!)
+    }
+
+    // ----------------------- Operator -----------------------
+
+    fun setPermissionOperator(operator: IPermissionOperator): BaseRequest {
+        mPermissionOperator = operator
         return this
     }
 
@@ -68,25 +101,31 @@ abstract class BaseRequest(protected var context: Context) {
         return this
     }
 
-    fun setInputFileName(file: File?) : BaseRequest{
-        mInputFile = file
+    fun asDownload(): BaseRequest {
+        mMediaOperator = DownloadMediaOperator()
         return this
     }
 
-    fun setOutputFileName(fileName: String?) : BaseRequest{
-        mOutputFileName = fileName
+    // -------------------- Media props --------------------------
+
+    fun setMediaDuration(duration: Long = 0): BaseRequest {
+        this.mDuration = duration
         return this
     }
 
-    fun getOutputFile(): File? {
-        if (mOutputFilePath == null || mOutputFileName == null) {
-            return null
-        }
-        return mOutputFilePath!!.resolve(mOutputFileName!!)
+    fun setMediaSize(width: Int = 0,height: Int = 0): BaseRequest {
+        this.mWidth = width
+        this.mHeight = height
+        return this
     }
 
-    fun getInputFile(): File? {
-        return mInputFile
+    // -------------------- other --------------------------
+    /**
+     * 同步到公共相册
+     */
+    fun synSystemMedia(): BaseRequest {
+        this.mSynSystemMedia = true
+        return this
     }
 
     fun start() {
@@ -94,5 +133,7 @@ abstract class BaseRequest(protected var context: Context) {
     }
 
     abstract fun start(fileOperator: IFileOperator)
+
+    abstract fun setExternalPublishDir(filePath: String? = null): BaseRequest
 
 }

@@ -1,8 +1,8 @@
 package com.elson.storage.operator.media
 
 import android.net.Uri
-import android.os.Environment
-import com.elson.storage.helper.FileHelper
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.elson.storage.helper.MediaHelper
 import com.elson.storage.request.BaseRequest
 
@@ -11,14 +11,14 @@ import com.elson.storage.request.BaseRequest
  * Date   : 2020/10/21
  * Desc   :
  */
-class AudioMediaOperator: IMediaOperator {
+class DownloadMediaOperator: IMediaOperator {
 
     override fun insertMedia(request: BaseRequest) {
         // do nothing
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun insertMedia_Q(request: BaseRequest): Uri? {
-        val relativePath: String = FileHelper.appendPath(Environment.DIRECTORY_MOVIES, request.mRelativePath)
-       return MediaHelper.insertAudioQ(request.context, request.getOutputFile()!!.name, relativePath)
+        return MediaHelper.insertDownloadQ(request.context, request.getOutputFile()!!.path)
     }
 }

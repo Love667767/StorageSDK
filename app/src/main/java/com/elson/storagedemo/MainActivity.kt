@@ -1,13 +1,19 @@
 package com.elson.storagedemo
 
-import androidx.appcompat.app.AppCompatActivity
+import android.Manifest
 import android.os.Bundle
-import android.provider.MediaStore
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.*
+import com.bumptech.glide.request.transition.Transition
 import com.elson.storage.StorageFacade
-import com.elson.storage.operator.file.IFileOperator
-import com.elson.storage.operator.media.ImageMediaOperator
-import com.elson.storage.request.BaseRequest
+import com.elson.storage.config.StorageConfig
+import com.elson.storage.helper.MediaHelper
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 
 class MainActivity : AppCompatActivity() {
 
@@ -15,21 +21,45 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        StorageFacade.init(StorageConfig().apply {
+            mRootDir = "Elson"
+            mIOExecutorService = Executors.newFixedThreadPool(5, object : ThreadFactory {
+                override fun newThread(r: Runnable): Thread {
+                    return Thread(r).apply {
+                        name = "Elson"
+                    }
+                }
+            })
+        })
         textView.setOnClickListener {
 
-            StorageFacade.with(this)
-                .setExternalCacheDir()
-                .asImage()
-                .setMediaOperator(ImageMediaOperator())
-                .start(object : IFileOperator {
-                    override fun operateFile(request: BaseRequest) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                    }
+            glideImg { file ->
+                StorageFacade.with(this)
+                        .setInputFile(file)
+                        .setExternalPublishDir("soul")
+                        .setOutputFileName("封面1.jpeg")
+                        .asImage()
+                        .synSystemMedia()
+                        .start()
+            }
 
-                    override fun operateFile_Q(request: BaseRequest) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        if (!MediaHelper.checkAndroid_Q()) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE), 1000)
+        }
+    }
+
+    private fun glideImg(callback: (File) -> Unit) {
+        val path1 = "https://Elson.png"
+        Glide.with(this)
+                .downloadOnly()
+                .load(path1)
+                .into(object : SimpleTarget<File?>() {
+                    override fun onResourceReady(resource: File, transition: Transition<in File?>?) {
+                        callback.invoke(resource)
                     }
                 })
-        }
     }
 }

@@ -1,6 +1,11 @@
 package com.elson.storage.operator.media
 
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import androidx.annotation.RequiresApi
+import com.elson.storage.helper.FileHelper
+import com.elson.storage.helper.MediaHelper
 import com.elson.storage.request.BaseRequest
 
 /**
@@ -10,11 +15,13 @@ import com.elson.storage.request.BaseRequest
  */
 class VideoMediaOperator: IMediaOperator {
 
-    override fun insertMedia(request: BaseRequest): String {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun insertMedia(request: BaseRequest) {
+        MediaHelper.insertVideo(request.context, request.getOutputFile()!!.path, 0, 0, request.mDuration)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun insertMedia_Q(request: BaseRequest): Uri? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val relativePath: String = FileHelper.appendPath(Environment.DIRECTORY_PICTURES, request.mRelativePath)
+        return MediaHelper.insertVideoQ(request.context, request.getOutputFile()!!.name, request.mDuration, relativePath)
     }
 }

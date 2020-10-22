@@ -1,5 +1,7 @@
 package com.elson.storage.config
 
+import java.util.concurrent.ExecutorService
+
 /**
  * Author : Elson
  * Date   : 2020/10/21
@@ -7,13 +9,7 @@ package com.elson.storage.config
  */
 class StorageConfig {
 
-    companion object {
+    var mRootDir = ""
 
-        const val MEDIA_TYPE_IMAGE = 1
-        const val MEDIA_TYPE_VIDEO = 2
-        const val MEDIA_TYPE_MUSIC = 3
-
-
-        
-    }
+    var mIOExecutorService: ExecutorService? = null
 }
