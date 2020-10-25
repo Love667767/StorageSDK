@@ -1,23 +1,69 @@
 package com.elson.storage.helper
 
-import android.text.TextUtils
-import java.util.*
+import com.elson.storage.config.MediaConstant
+import java.io.File
 
 /**
  * Author : Elson
  * Date   : 2020/10/21
- * Desc   :
+ * Desc   : 媒体类型
+ *
  */
 object MimeTypeHelper {
 
     @JvmStatic
-    fun isSuffixOfImage(name: String): Boolean {
-        return (!TextUtils.isEmpty(name) && name.endsWith(".PNG") || name.endsWith(".png") || name.endsWith(
-            ".jpeg"
-        )
-                || name.endsWith(".gif") || name.endsWith(".GIF") || name.endsWith(".jpg")
-                || name.endsWith(".webp") || name.endsWith(".WEBP") || name.endsWith(".JPEG")
-                || name.endsWith(".bmp"))
+    fun getMediaType(file: File?): Int {
+        if (file == null) {
+            return MediaConstant.MEDIA_TYPE_MISSING
+        }
+        return getMediaType(file.name)
+    }
+
+    @JvmStatic
+    fun getMediaType(file: String): Int {
+        val mediaSuffix = FileHelper.getFileSuffix(file)
+        if (isSuffixOfImage(mediaSuffix)) {
+            return MediaConstant.MEDIA_TYPE_IMAGE
+        } else if (isSuffixOfVideo(mediaSuffix)) {
+            return MediaConstant.MEDIA_TYPE_VIDEO
+        } else if (isSuffixOfAudio(mediaSuffix)) {
+            return MediaConstant.MEDIA_TYPE_AUDIO
+        } else {
+            return MediaConstant.MEDIA_TYPE_DOWNLOAD
+        }
+    }
+
+    @JvmStatic
+    fun isSuffixOfImage(suffix: String): Boolean {
+        return when (suffix) {
+            MediaConstant.IMAGE_BMP,
+            MediaConstant.IMAGE_JPEG,
+            MediaConstant.IMAGE_JPG,
+            MediaConstant.IMAGE_PNG,
+            MediaConstant.IMAGE_GIF,
+            MediaConstant.IMAGE_WEBP -> true
+            else -> false
+        }
+    }
+
+    @JvmStatic
+    fun isSuffixOfVideo(suffix: String): Boolean {
+        return when (suffix) {
+            MediaConstant.VIDEO_3GP,
+            MediaConstant.VIDEO_MP4,
+            MediaConstant.VIDEO_MPEG4 -> true
+            else -> false
+        }
+    }
+
+    @JvmStatic
+    fun isSuffixOfAudio(suffix: String): Boolean {
+        return when (suffix) {
+            MediaConstant.AUDIO_MKV,
+            MediaConstant.AUDIO_MP3,
+            MediaConstant.AUDIO_WAV -> true
+            else -> false
+        }
     }
 
     /**
@@ -25,30 +71,23 @@ object MimeTypeHelper {
      */
     @JvmStatic
     fun getImageMimeType(path: String): String {
-        val lowerPath = path.toLowerCase(Locale.ROOT)
-        if (lowerPath.endsWith("jpg") || lowerPath.endsWith("jpeg")) {
-            return "image/jpeg"
-        } else if (lowerPath.endsWith("png")) {
-            return "image/png"
-        } else if (lowerPath.endsWith("gif")) {
-            return "image/gif"
+        return when (FileHelper.getFileSuffix(path)) {
+            MediaConstant.IMAGE_GIF -> MediaConstant.MIME_TYPE_IMAGE_GIF
+            MediaConstant.IMAGE_PNG -> MediaConstant.MIME_TYPE_IMAGE_PNG
+            MediaConstant.IMAGE_WEBP -> MediaConstant.MIME_TYPE_IMAGE_WEBP
+            else -> MediaConstant.MIME_TYPE_IMAGE_JPEG
         }
-        return "image/jpeg"
     }
 
 
     @JvmStatic
     fun getAudioMimeType(path: String): String? {
-//            val lowerPath = path.toLowerCase(Locale.ROOT)
-////            if (lowerPath.endsWith("jpg") || lowerPath.endsWith("jpeg")) {
-////                return "image/jpeg"
-////            } else if (lowerPath.endsWith("png")) {
-////                return "image/png"
-////            } else if (lowerPath.endsWith("gif")) {
-////                return "image/gif"
-////            }
-////            return "image/jpeg"
-        return null
+        return when (FileHelper.getFileSuffix(path)) {
+            MediaConstant.AUDIO_WAV,
+            MediaConstant.AUDIO_MP3,
+            MediaConstant.AUDIO_MKV -> MediaConstant.MIME_TYPE_AUDIO_DEFAULT
+            else -> MediaConstant.MIME_TYPE_AUDIO_DEFAULT
+        }
     }
 
     /**
@@ -56,12 +95,13 @@ object MimeTypeHelper {
      */
     @JvmStatic
     fun getVideoMimeType(path: String): String {
-        val lowerPath = path.toLowerCase(Locale.ROOT)
-        if (lowerPath.endsWith("mp4") || lowerPath.endsWith("mpeg4")) {
-            return "video/mp4"
-        } else if (lowerPath.endsWith("3gp")) {
-            return "video/3gp"
+        val lowerPath = FileHelper.getFileSuffix(path)
+        return if (lowerPath == MediaConstant.VIDEO_3GP) {
+            MediaConstant.MIME_TYPE_VIDEO_3GP
+        } else {
+            MediaConstant.MIME_TYPE_VIDEO_MP4
         }
-        return "video/mp4"
     }
+
+
 }

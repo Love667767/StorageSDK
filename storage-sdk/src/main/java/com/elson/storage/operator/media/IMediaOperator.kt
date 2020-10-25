@@ -10,7 +10,7 @@ import com.elson.storage.request.BaseRequest
  */
 interface IMediaOperator {
 
-    fun insertMedia(request: BaseRequest)
+    fun insertMedia(request: BaseRequest<*>)
 
-    fun insertMedia_Q(request: BaseRequest): Uri?
+    fun insertMedia_Q(request: BaseRequest<*>): Uri?
 }

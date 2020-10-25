@@ -9,11 +9,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import androidx.annotation.RequiresApi
 import com.elson.storage.StorageFacade
 import java.io.File
-import java.util.*
 
 
 /**
@@ -23,6 +21,7 @@ import java.util.*
  */
 object MediaHelper {
 
+    @JvmStatic
     fun checkAndroid_Q(): Boolean {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !Environment.isExternalStorageLegacy()
     }
@@ -53,7 +52,7 @@ object MediaHelper {
     }
 
     /**
-     * 保存到视频到本地，并插入MediaStore以保证相册可以查看到,这是更优化的方法，防止读取的视频获取不到宽高
+     * 保存到视频到本地，并插入MediaStore以保证相册可以查看到。
      */
     @JvmStatic
     fun insertVideo(context: Context, filePath: String, width: Int, height: Int, duration: Long = 0) {
@@ -89,14 +88,18 @@ object MediaHelper {
         values.put(MediaStore.MediaColumns.DATE_ADDED, timeMillis)
         values.put(MediaStore.MediaColumns.DATA, saveFile.absolutePath)
         values.put(MediaStore.MediaColumns.SIZE, saveFile.length())
-        values.put(MediaStore.Video.VideoColumns.DATE_TAKEN, timeMillis)
+        values.put(MediaStore.MediaColumns.DATE_TAKEN, timeMillis)
         return values
     }
 
     // ----------------- Android Q --------------
 
     @JvmStatic
-    fun insertImageQ(context: Context, fileName: String, relativePath: String = Environment.DIRECTORY_PICTURES): Uri? {
+    @RequiresApi(Build.VERSION_CODES.Q)
+    fun insertImageQ(context: Context, fileName: String, relativePath: String? = Environment.DIRECTORY_PICTURES): Uri? {
+        if (relativePath.isNullOrBlank()) {
+            return null
+        }
         try {
             val values = initCommonContentValuesQ(fileName, relativePath)
             values.put(MediaStore.MediaColumns.MIME_TYPE, MimeTypeHelper.getImageMimeType(fileName))
@@ -110,7 +113,11 @@ object MediaHelper {
     }
 
     @JvmStatic
-    fun insertAudioQ(context: Context, fileName: String, relativePath: String = Environment.DIRECTORY_MUSIC): Uri? {
+    @RequiresApi(Build.VERSION_CODES.Q)
+    fun insertAudioQ(context: Context, fileName: String, relativePath: String? = Environment.DIRECTORY_MUSIC): Uri? {
+        if (relativePath.isNullOrBlank()) {
+            return null
+        }
         try {
             val values = initCommonContentValuesQ(fileName, relativePath)
             values.put(MediaStore.MediaColumns.MIME_TYPE, MimeTypeHelper.getAudioMimeType(fileName))
@@ -125,7 +132,10 @@ object MediaHelper {
 
     @JvmStatic
     @RequiresApi(Build.VERSION_CODES.Q)
-    fun insertVideoQ(context: Context, fileName: String, duration: Long = 0, relativePath: String = Environment.DIRECTORY_MOVIES): Uri? {
+    fun insertVideoQ(context: Context, fileName: String, duration: Long = 0, relativePath: String? = Environment.DIRECTORY_MOVIES): Uri? {
+        if (relativePath.isNullOrBlank()) {
+            return null
+        }
         try {
             val values = initCommonContentValuesQ(fileName, relativePath)
             values.put(MediaStore.MediaColumns.MIME_TYPE, MimeTypeHelper.getVideoMimeType(fileName))
@@ -143,10 +153,13 @@ object MediaHelper {
 
     @JvmStatic
     @RequiresApi(Build.VERSION_CODES.Q)
-    fun insertDownloadQ(context: Context, fileName: String): Uri? {
+    fun insertDownloadQ(context: Context, fileName: String, relativePath: String? = Environment.DIRECTORY_DOWNLOADS): Uri? {
+        if (relativePath.isNullOrBlank()) {
+            return null
+        }
         try {
-            val values = initCommonContentValuesQ(fileName, Environment.DIRECTORY_DOWNLOADS)
-            values.put(MediaStore.MediaColumns.MIME_TYPE, FileHelper.getFileSuffix(fileName))
+            val values = initCommonContentValuesQ(fileName, relativePath)
+            values.put(MediaStore.DownloadColumns.MIME_TYPE, FileHelper.getFileSuffix(fileName))
             val external = MediaStore.Downloads.EXTERNAL_CONTENT_URI
             val resolver: ContentResolver = context.contentResolver
             return resolver.insert(external, values)
@@ -157,6 +170,7 @@ object MediaHelper {
     }
 
     @JvmStatic
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun initCommonContentValuesQ(fileName: String, relativePath: String): ContentValues {
         val timeMillis = System.currentTimeMillis()
         val values = ContentValues()
@@ -218,6 +232,14 @@ object MediaHelper {
             cursor?.close()
         }
         return null
+    }
+
+    @JvmStatic
+    fun deleteFile_Q(context: Context, fileName: String?, storageUri: Uri): Int {
+        if (!fileName.isNullOrBlank()) {
+            return context.contentResolver.delete(storageUri, MediaStore.Images.Media.DISPLAY_NAME + "=?", arrayOf(fileName))
+        }
+        return 0
     }
 
 }

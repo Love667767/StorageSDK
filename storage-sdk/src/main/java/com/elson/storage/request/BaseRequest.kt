@@ -1,11 +1,17 @@
 package com.elson.storage.request
 
 import android.content.Context
+import com.elson.storage.StorageFacade
+import com.elson.storage.config.MediaConstant
 import com.elson.storage.helper.PathHelper
-import com.elson.storage.operator.file.DefaultFileOperator
 import com.elson.storage.operator.file.IFileOperator
+import com.elson.storage.interceptor.ChainInterceptor
+import com.elson.storage.interceptor.Interceptor
 import com.elson.storage.operator.media.*
+import com.elson.storage.operator.media.factory.MediaOperatorFactory
 import com.elson.storage.operator.permission.IPermissionOperator
+import com.elson.storage.request.callback.Callback
+import com.elson.storage.request.callback.DefaultCallback
 import java.io.File
 
 /**
@@ -13,56 +19,59 @@ import java.io.File
  * Date   : 2020/10/21
  * Desc   :
  */
-abstract class BaseRequest(var context: Context) {
+abstract class BaseRequest<T>(var context: Context) {
 
     protected var mMediaOperator: IMediaOperator? = null
+    protected var mFileOperator: IFileOperator<*>? = null
     protected var mPermissionOperator: IPermissionOperator? = null
+    protected val mChainInterceptor by lazy { ChainInterceptor() }
 
-    internal var mInputFile: File? = null
+    internal var mInputModel: T? = null
     internal var mOutputFilePath: File? = null
     internal var mOutputFileName: String? = null
-    internal var mRelativePath : String? = null
+    internal var mRelativePath: String? = null
 
-    protected var mSynSystemMedia: Boolean = false
+    protected var isPublishDir: Boolean = false
+    protected var isAutoMatchFolder: Boolean = false
+    protected var isSynSystemMedia: Boolean = false
+    internal var mMediaType = MediaConstant.MEDIA_TYPE_MISSING
+    internal var mCallback: Callback? = null
 
     // ------- Media props ---------
     internal var mDuration: Long = 0L
     internal var mWidth: Int = 0
     internal var mHeight: Int = 0
+    internal var mTag: String = ""
 
-    // --------------------- Path ----------------------
+    // --------------------- File Path ----------------------
 
-    fun setFileDir(filePath: String? = null): BaseRequest {
+    fun setFileDir(filePath: String? = null): BaseRequest<T> {
+        isPublishDir = false
         mOutputFilePath = PathHelper.getFileDir(context, filePath)
         return this
     }
 
-    fun setCacheDir(filePath: String? = null): BaseRequest {
+    fun setCacheDir(filePath: String? = null): BaseRequest<T> {
+        isPublishDir = false
         mOutputFilePath = PathHelper.getCacheDir(context, filePath)
         return this
     }
 
-    fun setExternalFileDir(filePath: String? = null): BaseRequest {
+    fun setExtAppFileDir(filePath: String? = null): BaseRequest<T> {
+        isPublishDir = false
         mOutputFilePath = PathHelper.getExternalFileDir(context, filePath)
         return this
     }
 
-    fun setExternalCacheDir(filePath: String? = null): BaseRequest {
+    fun setExtAppCacheDir(filePath: String? = null): BaseRequest<T> {
+        isPublishDir = false
         mOutputFilePath = PathHelper.getExternalCacheDir(context, filePath)
         return this
     }
 
-    fun setInputFile(file: File?): BaseRequest {
-        mInputFile = file
-        return this
-    }
+    abstract fun setExtPublishDir(filePath: String? = null): BaseRequest<T>
 
-    fun setCustomFilePath(outputFilePath: String? = null): BaseRequest {
-        mOutputFilePath = PathHelper.getFileDir(context, outputFilePath)
-        return this
-    }
-
-    fun setOutputFileName(fileName: String?): BaseRequest {
+    fun setOutputFileName(fileName: String?): BaseRequest<T> {
         mOutputFileName = fileName
         return this
     }
@@ -76,44 +85,59 @@ abstract class BaseRequest(var context: Context) {
 
     // ----------------------- Operator -----------------------
 
-    fun setPermissionOperator(operator: IPermissionOperator): BaseRequest {
+    fun addInterceptor(interceptor: Interceptor): BaseRequest<T> {
+        mChainInterceptor.addInterceptor(interceptor)
+        return this
+    }
+
+    fun addInterceptors(vararg interceptors: Interceptor): BaseRequest<T> {
+        mChainInterceptor.addInterceptors(*interceptors)
+        return this
+    }
+
+    fun addFileOperator(operator: IFileOperator<T>): BaseRequest<T> {
+        mFileOperator = operator
+        return this
+    }
+
+    fun addPermissionOperator(operator: IPermissionOperator): BaseRequest<T> {
         mPermissionOperator = operator
         return this
     }
 
-    fun setMediaOperator(operator: IMediaOperator): BaseRequest {
+    fun addMediaOperator(operator: IMediaOperator): BaseRequest<T> {
         mMediaOperator = operator
         return this
     }
 
-    fun asImage(): BaseRequest {
-        mMediaOperator = ImageMediaOperator()
+    fun asImage(): BaseRequest<T> {
+        mMediaOperator = MediaOperatorFactory.createOperator(MediaConstant.MEDIA_TYPE_IMAGE)
         return this
     }
 
-    fun asVideo(): BaseRequest {
-        mMediaOperator = VideoMediaOperator()
+    fun asVideo(): BaseRequest<T> {
+        mMediaOperator = MediaOperatorFactory.createOperator(MediaConstant.MEDIA_TYPE_VIDEO)
         return this
     }
 
-    fun asAudio(): BaseRequest {
-        mMediaOperator = AudioMediaOperator()
+    fun asAudio(): BaseRequest<T> {
+        mMediaOperator = MediaOperatorFactory.createOperator(MediaConstant.MEDIA_TYPE_AUDIO)
         return this
     }
 
-    fun asDownload(): BaseRequest {
-        mMediaOperator = DownloadMediaOperator()
+    fun asDownload(): BaseRequest<T> {
+        mMediaOperator = MediaOperatorFactory.createOperator(MediaConstant.MEDIA_TYPE_DOWNLOAD)
         return this
     }
 
     // -------------------- Media props --------------------------
 
-    fun setMediaDuration(duration: Long = 0): BaseRequest {
+    fun setMediaDuration(duration: Long = 0): BaseRequest<T> {
         this.mDuration = duration
         return this
     }
 
-    fun setMediaSize(width: Int = 0,height: Int = 0): BaseRequest {
+    fun setMediaSize(width: Int = 0, height: Int = 0): BaseRequest<T> {
         this.mWidth = width
         this.mHeight = height
         return this
@@ -123,17 +147,35 @@ abstract class BaseRequest(var context: Context) {
     /**
      * 同步到公共相册
      */
-    fun synSystemMedia(): BaseRequest {
-        this.mSynSystemMedia = true
+    fun synSystemMedia(): BaseRequest<T> {
+        this.isSynSystemMedia = true
         return this
     }
 
-    fun start() {
-        start(DefaultFileOperator())
+    /**
+     * 根据文件类型自动匹配存储的目录
+     */
+    fun autoMatchMediaDir(): BaseRequest<T> {
+        this.isAutoMatchFolder = true
+        return this
     }
 
-    abstract fun start(fileOperator: IFileOperator)
+    protected fun getMediaDirWithMediaType(mediaType: Int): String {
+        return when (mediaType) {
+            MediaConstant.MEDIA_TYPE_IMAGE -> StorageFacade.getConfig().getPublishImageDir()
+            MediaConstant.MEDIA_TYPE_VIDEO -> StorageFacade.getConfig().getPublishVideoDir()
+            MediaConstant.MEDIA_TYPE_AUDIO -> StorageFacade.getConfig().getPublishAudioDir()
+            MediaConstant.MEDIA_TYPE_DOWNLOAD -> StorageFacade.getConfig().getPublishDownloadDir()
+            else -> StorageFacade.getConfig().mRootDir
+        }
+    }
 
-    abstract fun setExternalPublishDir(filePath: String? = null): BaseRequest
+    fun start() {
+        start(DefaultCallback())
+    }
+
+    abstract fun start(callback: Callback)
+
+    abstract fun onSuccess()
 
 }

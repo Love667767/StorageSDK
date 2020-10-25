@@ -47,35 +47,13 @@ object PathHelper {
      * SD卡根目录
      */
     @JvmStatic
-    fun getLegacyExternalRootDir(context: Context, filePath: String? = null): File? {
+    fun getLegacyExternalRootDir(filePath: String? = null): File? {
         if (filePath.isNullOrBlank()) {
             return Environment.getExternalStorageDirectory()
         }
         return Environment.getExternalStorageDirectory().resolve(filePath)
     }
 
-    /**
-     * SD卡系统图片目录
-     */
-    @JvmStatic
-    fun getLegacyExternalImageDir(context: Context): File? {
-        return getLegacyExternalRootDir(context, Environment.DIRECTORY_PICTURES)
-    }
 
-    /**
-     * SD卡系统视频目录
-     */
-    @JvmStatic
-    fun getLegacyExternalVideoDir(context: Context): File? {
-        return getLegacyExternalRootDir(context, Environment.DIRECTORY_MOVIES)
-    }
-
-    /**
-     * SD卡系统音频目录
-     */
-    @JvmStatic
-    fun getLegacyExternalAudioDir(context: Context): File? {
-        return getLegacyExternalRootDir(context, Environment.DIRECTORY_MUSIC)
-    }
 
 }

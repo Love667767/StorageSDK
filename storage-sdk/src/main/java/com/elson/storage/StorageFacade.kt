@@ -6,10 +6,8 @@ import android.net.Uri
 import android.widget.Toast
 import com.elson.storage.config.StorageConfig
 import com.elson.storage.executor.MainHandlerExecutor
-import com.elson.storage.helper.MediaHelper
-import com.elson.storage.request.AndroidQRequest
 import com.elson.storage.request.BaseRequest
-import com.elson.storage.request.LegacyRequest
+import com.elson.storage.request.RequestManager
 import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
@@ -37,18 +35,18 @@ object StorageFacade {
         return mMainService
     }
 
+    fun getConfig(): StorageConfig {
+        return if (mConfig == null) StorageConfig() else mConfig!!
+    }
+
     fun init(config: StorageConfig) {
         mConfig = config
         mExecutorService = config.mIOExecutorService
     }
 
     @JvmStatic
-    fun with(context: Context): BaseRequest {
-        return if (MediaHelper.checkAndroid_Q()) {
-            AndroidQRequest(context.applicationContext)
-        } else {
-            LegacyRequest(context.applicationContext)
-        }
+    fun with(context: Context): RequestManager {
+        return RequestManager(context)
     }
 
     @JvmStatic
@@ -58,22 +56,55 @@ object StorageFacade {
 
     @JvmStatic
     fun showToast(context: Context, text: String) {
-        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        mMainService.execute {
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        }
     }
 
+    /**
+     * 沙盒
+     */
     @JvmStatic
-    fun storeImage(context: Context, inputFile: File?, fileName: String?): BaseRequest {
+    fun storeImgExtAppDir(context: Context, inputFile: File?, fileName: String?) {
         return with(context)
-                .asImage()
-                .setInputFile(inputFile)
+                .load(inputFile)
+                .setExtAppFileDir(getConfig().getExtImageDir())
                 .setOutputFileName(fileName)
+                .start()
     }
 
     @JvmStatic
-    fun storeVideo(context: Context, inputFile: File?, fileName: String?): BaseRequest {
+    fun storeImgPublishDir(context: Context, inputFile: File?, fileName: String?): BaseRequest<*> {
         return with(context)
-                .asVideo()
-                .setInputFile(inputFile)
+                .load(inputFile)
+                .setExtPublishDir(getConfig().getPublishImageDir())
+                .setOutputFileName(fileName)
+                .synSystemMedia()
+    }
+
+    @JvmStatic
+    fun storeVideoPublishDir(context: Context, inputFile: File?, fileName: String?): BaseRequest<*> {
+        return with(context)
+                .load(inputFile)
+                .setExtPublishDir(getConfig().getPublishVideoDir())
+                .setOutputFileName(fileName)
+                .synSystemMedia()
+    }
+
+    @JvmStatic
+    fun storeAudioPublishDir(context: Context, inputFile: File?, fileName: String?): BaseRequest<*> {
+        return with(context)
+                .load(inputFile)
+                .setExtPublishDir(getConfig().getPublishAudioDir())
+                .setOutputFileName(fileName)
+                .synSystemMedia()
+    }
+
+    @JvmStatic
+    fun storeDownloadPublishDir(context: Context, inputFile: File?, fileName: String?): BaseRequest<*> {
+        return with(context)
+                .load(inputFile)
+                .setExtPublishDir(getConfig().getPublishDownloadDir())
                 .setOutputFileName(fileName)
     }
 

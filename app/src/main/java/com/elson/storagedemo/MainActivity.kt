@@ -1,6 +1,7 @@
 package com.elson.storagedemo
 
 import android.Manifest
+import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -9,6 +10,7 @@ import com.bumptech.glide.request.target.*
 import com.bumptech.glide.request.transition.Transition
 import com.elson.storage.StorageFacade
 import com.elson.storage.config.StorageConfig
+import com.elson.storage.helper.FileHelper
 import com.elson.storage.helper.MediaHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
@@ -31,18 +33,38 @@ class MainActivity : AppCompatActivity() {
                 }
             })
         })
-        textView.setOnClickListener {
-
-            glideImg { file ->
+        saveFileTv.setOnClickListener {
+            glideImgFile { file ->
                 StorageFacade.with(this)
-                        .setInputFile(file)
-                        .setExternalPublishDir("soul")
-                        .setOutputFileName("封面1.jpeg")
+                        .load(file)
+//                        .load(BitmapFactory.decodeFile(""))
+//                        .setExtAppFileDir("Elson")
+//                        .setExtAppCacheDir("Elson")
+                        .setExtPublishDir("/Elson1")
+                        .setOutputFileName(FileHelper.getImageFileName("ABC.jpg"))
                         .asImage()
+//                        .asDownload()
+//                        .autoMatchMediaDir()
                         .synSystemMedia()
                         .start()
             }
+        }
 
+        saveBitmapTv.setOnClickListener {
+
+            glideImgBitmap { bitmap ->
+                StorageFacade.with(this)
+                        .load(bitmap)
+//                        .setExtAppFileDir("Elson")
+//                        .setExtAppCacheDir("Elson")
+                        .setExtPublishDir("/Elson1")
+                        .setOutputFileName(FileHelper.getImageFileName("ABC.webp"))
+//                        .asImage()
+//                        .asDownload()
+//                        .autoMatchMediaDir()
+                        .synSystemMedia()
+                        .start()
+            }
         }
 
         if (!MediaHelper.checkAndroid_Q()) {
@@ -51,13 +73,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun glideImg(callback: (File) -> Unit) {
-        val path1 = "https://Elson.png"
+    private fun glideImgFile(callback: (File) -> Unit) {
+        val path1 = "https://image.32yx.com/file/userfiles/images/2017080820292511601.jpg"
         Glide.with(this)
                 .downloadOnly()
                 .load(path1)
                 .into(object : SimpleTarget<File?>() {
                     override fun onResourceReady(resource: File, transition: Transition<in File?>?) {
+                        callback.invoke(resource)
+                    }
+                })
+    }
+
+    private fun glideImgBitmap(callback: (Bitmap) -> Unit) {
+        val path1 = "https://image.32yx.com/file/userfiles/images/2017080820292511601.jpg"
+        Glide.with(this)
+                .asBitmap()
+                .load(path1)
+                .into(object : SimpleTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                         callback.invoke(resource)
                     }
                 })
