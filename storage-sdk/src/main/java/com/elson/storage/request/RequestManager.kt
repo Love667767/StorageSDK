@@ -11,7 +11,7 @@ import java.io.File
  * Date   : 2020/10/24
  * Desc   :
  */
-class RequestManager(var context: Context) {
+class RequestManager(private var context: Context) {
 
     fun load(file: File?): BaseRequest<File> {
         return if (MediaHelper.checkAndroid_Q()) {

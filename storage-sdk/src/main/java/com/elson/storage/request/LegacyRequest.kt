@@ -5,9 +5,6 @@ import com.elson.storage.config.MediaConstant
 import com.elson.storage.helper.FileHelper
 import com.elson.storage.helper.MimeTypeHelper
 import com.elson.storage.helper.PathHelper
-import com.elson.storage.operator.file.DefaultFileOperator
-import com.elson.storage.operator.file.IFileOperator
-import com.elson.storage.operator.media.MultiTypeMediaOperator
 import com.elson.storage.request.callback.Callback
 
 /**
@@ -17,8 +14,7 @@ import com.elson.storage.request.callback.Callback
  */
 class LegacyRequest<T>(application: Context) : BaseRequest<T>(application) {
 
-    override fun setExtPublishDir(filePath: String?): BaseRequest<T> {
-        isPublishDir = true
+    override fun setExtPublishDir(filePath: String?, filePath_Q: String?): BaseRequest<T> {
         mOutputFilePath = PathHelper.getLegacyExternalRootDir(filePath)
         return this
     }
@@ -29,49 +25,33 @@ class LegacyRequest<T>(application: Context) : BaseRequest<T>(application) {
             callback.onFailed(context, MediaConstant.MEDIA_TYPE_MISSING)
             return
         }
-        mMediaType = MimeTypeHelper.getMediaType(mOutputFileName!!)
-        if (isAutoMatchFolder && isPublishDir) {
-            val path = getMediaDirWithMediaType(mMediaType)
-            mOutputFilePath = mOutputFilePath!!.resolve(path)
+        if (mMediaType == MediaConstant.MEDIA_TYPE_MISSING) {
+            mMediaType = MimeTypeHelper.getMediaType(mOutputFileName!!)
         }
 
         mChainInterceptor.process(this)
     }
 
     override fun onSuccess() {
-        if (mMediaOperator == null) {
-            mMediaType = MimeTypeHelper.getMediaType(mOutputFileName!!)
-            mMediaOperator = MultiTypeMediaOperator()
-        }
+        getPermissionOperator().applyPermissions {
+            val filePath = mOutputFilePath
+            if (filePath != null) {
+                // 1.若文件夹不存在，先创建。
+                FileHelper.mkdirs(filePath)
 
-        var fileOperator = mFileOperator
-        if (fileOperator == null) {
-            fileOperator = DefaultFileOperator()
-        }
+                // 2.检测该文件是否存在。
+                val outputFile = filePath.resolve(mOutputFileName!!)
+                FileHelper.deleteFile(outputFile)
 
-        if (mPermissionOperator == null) {
-            executeStore(fileOperator)
-            return
-        }
-        mPermissionOperator!!.applyPermissions {
-            executeStore(fileOperator)
-        }
-    }
+                // 3.保存文件
+                getFileOperator().operateFile(this, outputFile)
 
-    private fun executeStore(fileOperator: IFileOperator<*>) {
-        val filePath = mOutputFilePath
-        if (filePath != null) {
-            // 1.若文件夹不存在，先创建。
-            FileHelper.mkdirs(filePath)
-
-            // 2.检测该文件是否存在。
-            val outputFile = filePath.resolve(mOutputFileName!!)
-            FileHelper.deleteFile(outputFile)
-
-            fileOperator.operateFile(this, outputFile)
-            if (isSynSystemMedia) {
-                mMediaOperator?.insertMedia(this)
+                // 4.同步到公共媒体库
+                if (isSynSystemMedia) {
+                    getMediaOperator().insertMedia(this)
+                }
             }
         }
     }
+
 }

@@ -51,7 +51,7 @@ object PathHelper {
         if (filePath.isNullOrBlank()) {
             return Environment.getExternalStorageDirectory()
         }
-        return Environment.getExternalStorageDirectory().resolve(filePath)
+        return FileHelper.appendPath(Environment.getExternalStorageDirectory(), filePath)
     }
 
 

@@ -96,7 +96,7 @@ object MediaHelper {
 
     @JvmStatic
     @RequiresApi(Build.VERSION_CODES.Q)
-    fun insertImageQ(context: Context, fileName: String, relativePath: String? = Environment.DIRECTORY_PICTURES): Uri? {
+    fun insertImageQ(context: Context, fileName: String, relativePath: String? = Environment.DIRECTORY_DCIM): Uri? {
         if (relativePath.isNullOrBlank()) {
             return null
         }

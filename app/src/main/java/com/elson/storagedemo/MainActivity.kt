@@ -23,8 +23,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        StorageFacade.init(StorageConfig().apply {
-            mRootDir = "Elson"
+        StorageFacade.init(StorageConfig("Elson").apply {
             mIOExecutorService = Executors.newFixedThreadPool(5, object : ThreadFactory {
                 override fun newThread(r: Runnable): Thread {
                     return Thread(r).apply {
@@ -33,8 +32,11 @@ class MainActivity : AppCompatActivity() {
                 }
             })
         })
+
         saveFileTv.setOnClickListener {
             glideImgFile { file ->
+//                StorageFacade.storeImgPublishDir(this, file, "CBA.jpg").start()
+
                 StorageFacade.with(this)
                         .load(file)
 //                        .load(BitmapFactory.decodeFile(""))
@@ -44,7 +46,6 @@ class MainActivity : AppCompatActivity() {
                         .setOutputFileName(FileHelper.getImageFileName("ABC.jpg"))
                         .asImage()
 //                        .asDownload()
-//                        .autoMatchMediaDir()
                         .synSystemMedia()
                         .start()
             }
@@ -53,17 +54,17 @@ class MainActivity : AppCompatActivity() {
         saveBitmapTv.setOnClickListener {
 
             glideImgBitmap { bitmap ->
-                StorageFacade.with(this)
-                        .load(bitmap)
-//                        .setExtAppFileDir("Elson")
-//                        .setExtAppCacheDir("Elson")
-                        .setExtPublishDir("/Elson1")
-                        .setOutputFileName(FileHelper.getImageFileName("ABC.webp"))
-//                        .asImage()
-//                        .asDownload()
-//                        .autoMatchMediaDir()
-                        .synSystemMedia()
-                        .start()
+                StorageFacade.storeVideoPublishDir(this, bitmap, "CBA.mp4").start()
+
+//                StorageFacade.with(this)
+//                        .load(bitmap)
+////                        .setExtAppFileDir("Elson")
+//                        .setExtPublishDir("/Elson/Image", "Elson_Q")
+//                        .setOutputFileName(FileHelper.getImageFileName("ABC.webp"))
+////                        .asImage()
+////                        .asDownload()
+//                        .synSystemMedia()
+//                        .start()
             }
         }
 

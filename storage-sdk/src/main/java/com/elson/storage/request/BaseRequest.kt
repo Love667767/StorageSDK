@@ -7,8 +7,10 @@ import com.elson.storage.helper.PathHelper
 import com.elson.storage.operator.file.IFileOperator
 import com.elson.storage.interceptor.ChainInterceptor
 import com.elson.storage.interceptor.Interceptor
+import com.elson.storage.operator.file.DefaultFileOperator
 import com.elson.storage.operator.media.*
 import com.elson.storage.operator.media.factory.MediaOperatorFactory
+import com.elson.storage.operator.permission.DefaultPermissionOperator
 import com.elson.storage.operator.permission.IPermissionOperator
 import com.elson.storage.request.callback.Callback
 import com.elson.storage.request.callback.DefaultCallback
@@ -31,45 +33,45 @@ abstract class BaseRequest<T>(var context: Context) {
     internal var mOutputFileName: String? = null
     internal var mRelativePath: String? = null
 
-    protected var isPublishDir: Boolean = false
-    protected var isAutoMatchFolder: Boolean = false
+    internal var mTag: String = ""
+    internal var mCallback: Callback? = null
     protected var isSynSystemMedia: Boolean = false
     internal var mMediaType = MediaConstant.MEDIA_TYPE_MISSING
-    internal var mCallback: Callback? = null
 
     // ------- Media props ---------
     internal var mDuration: Long = 0L
     internal var mWidth: Int = 0
     internal var mHeight: Int = 0
-    internal var mTag: String = ""
+
 
     // --------------------- File Path ----------------------
 
     fun setFileDir(filePath: String? = null): BaseRequest<T> {
-        isPublishDir = false
         mOutputFilePath = PathHelper.getFileDir(context, filePath)
         return this
     }
 
     fun setCacheDir(filePath: String? = null): BaseRequest<T> {
-        isPublishDir = false
         mOutputFilePath = PathHelper.getCacheDir(context, filePath)
         return this
     }
 
     fun setExtAppFileDir(filePath: String? = null): BaseRequest<T> {
-        isPublishDir = false
         mOutputFilePath = PathHelper.getExternalFileDir(context, filePath)
         return this
     }
 
     fun setExtAppCacheDir(filePath: String? = null): BaseRequest<T> {
-        isPublishDir = false
         mOutputFilePath = PathHelper.getExternalCacheDir(context, filePath)
         return this
     }
 
-    abstract fun setExtPublishDir(filePath: String? = null): BaseRequest<T>
+    /**
+     * 设置外部公共目录的文件路径
+     * @param filePath：老版本的文件存储路径
+     * @param filePath_Q：Android Q对应的文件存储路径
+     */
+    abstract fun setExtPublishDir(filePath: String? = null, filePath_Q: String?= null): BaseRequest<T>
 
     fun setOutputFileName(fileName: String?): BaseRequest<T> {
         mOutputFileName = fileName
@@ -100,14 +102,35 @@ abstract class BaseRequest<T>(var context: Context) {
         return this
     }
 
+    fun getFileOperator(): IFileOperator<*> {
+        if (mFileOperator == null) {
+            mFileOperator = DefaultFileOperator()
+        }
+        return mFileOperator!!
+    }
+
     fun addPermissionOperator(operator: IPermissionOperator): BaseRequest<T> {
         mPermissionOperator = operator
         return this
     }
 
+    protected fun getPermissionOperator(): IPermissionOperator {
+        if (mPermissionOperator == null) {
+            mPermissionOperator = DefaultPermissionOperator(context)
+        }
+        return mPermissionOperator!!
+    }
+
     fun addMediaOperator(operator: IMediaOperator): BaseRequest<T> {
         mMediaOperator = operator
         return this
+    }
+
+    protected fun getMediaOperator(): IMediaOperator {
+        if (mMediaOperator == null) {
+            mMediaOperator = MultiTypeMediaOperator()
+        }
+        return mMediaOperator!!
     }
 
     fun asImage(): BaseRequest<T> {
@@ -150,24 +173,6 @@ abstract class BaseRequest<T>(var context: Context) {
     fun synSystemMedia(): BaseRequest<T> {
         this.isSynSystemMedia = true
         return this
-    }
-
-    /**
-     * 根据文件类型自动匹配存储的目录
-     */
-    fun autoMatchMediaDir(): BaseRequest<T> {
-        this.isAutoMatchFolder = true
-        return this
-    }
-
-    protected fun getMediaDirWithMediaType(mediaType: Int): String {
-        return when (mediaType) {
-            MediaConstant.MEDIA_TYPE_IMAGE -> StorageFacade.getConfig().getPublishImageDir()
-            MediaConstant.MEDIA_TYPE_VIDEO -> StorageFacade.getConfig().getPublishVideoDir()
-            MediaConstant.MEDIA_TYPE_AUDIO -> StorageFacade.getConfig().getPublishAudioDir()
-            MediaConstant.MEDIA_TYPE_DOWNLOAD -> StorageFacade.getConfig().getPublishDownloadDir()
-            else -> StorageFacade.getConfig().mRootDir
-        }
     }
 
     fun start() {

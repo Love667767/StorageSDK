@@ -23,6 +23,6 @@
         android:padding="15dp"
         android:layout_marginBottom="5dp"
         android:gravity="center"
-        android:text="Save File"
+        android:text="Save Bitmap"
         android:background="#f1f1f1" />
 </LinearLayout>

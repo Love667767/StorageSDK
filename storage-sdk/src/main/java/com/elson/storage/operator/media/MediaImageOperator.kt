@@ -25,7 +25,7 @@ class MediaImageOperator: IMediaOperator {
     override fun insertMedia_Q(request: BaseRequest<*>): Uri? {
         MediaHelper.deleteFile_Q(request.context, request.mOutputFileName, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
 
-        val relativePath: String = FileHelper.appendPath(Environment.DIRECTORY_PICTURES, request.mRelativePath)
+        val relativePath: String = FileHelper.appendPath(Environment.DIRECTORY_DCIM, request.mRelativePath)
         request.mTag = relativePath
         val fileName = FileHelper.getImageFileName(request.mOutputFileName)
         return MediaHelper.insertImageQ(request.context, fileName, relativePath)
