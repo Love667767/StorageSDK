@@ -2,6 +2,7 @@ package com.elson.storage.config
 
 import android.os.Environment
 import com.elson.storage.helper.MediaHelper
+import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 
 /**
@@ -17,5 +18,7 @@ class StorageConfig(var mRootDir: String = "") {
     var mDownloadDir = "${mRootDir}/${Environment.DIRECTORY_DOWNLOADS}"
 
     var mIOExecutorService: ExecutorService? = null
+
+    var mMainExecutor: Executor? = null
 
 }

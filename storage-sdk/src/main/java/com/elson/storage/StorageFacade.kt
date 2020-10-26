@@ -22,7 +22,7 @@ object StorageFacade {
 
     private var mConfig: StorageConfig? = null
     private var mExecutorService: ExecutorService? = null
-    private val mMainService: Executor by lazy { MainHandlerExecutor() }
+    private var mMainService: Executor?=null
 
     fun getExecutorService(): ExecutorService {
         if (mExecutorService == null) {
@@ -32,7 +32,10 @@ object StorageFacade {
     }
 
     fun getMainExecutor(): Executor {
-        return mMainService
+        if (mMainService == null) {
+            mMainService = MainHandlerExecutor()
+        }
+        return mMainService!!
     }
 
     fun getConfig(): StorageConfig {
@@ -42,6 +45,7 @@ object StorageFacade {
     fun init(config: StorageConfig) {
         mConfig = config
         mExecutorService = config.mIOExecutorService
+        mMainService = config.mMainExecutor
     }
 
     @JvmStatic
@@ -56,7 +60,7 @@ object StorageFacade {
 
     @JvmStatic
     fun showToast(context: Context, text: String) {
-        mMainService.execute {
+        getMainExecutor().execute {
             Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
         }
     }

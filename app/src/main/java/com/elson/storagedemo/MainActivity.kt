@@ -8,6 +8,7 @@ import androidx.core.app.ActivityCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.*
 import com.bumptech.glide.request.transition.Transition
+import com.elson.executors.TaskExecutors
 import com.elson.storage.StorageFacade
 import com.elson.storage.config.StorageConfig
 import com.elson.storage.helper.FileHelper
@@ -24,13 +25,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         StorageFacade.init(StorageConfig("Elson").apply {
-            mIOExecutorService = Executors.newFixedThreadPool(5, object : ThreadFactory {
-                override fun newThread(r: Runnable): Thread {
-                    return Thread(r).apply {
-                        name = "Elson"
-                    }
-                }
-            })
+            mMainExecutor = TaskExecutors.mainThread()
+            mIOExecutorService = TaskExecutors.io()
         })
 
         saveFileTv.setOnClickListener {
@@ -42,7 +38,7 @@ class MainActivity : AppCompatActivity() {
 //                        .load(BitmapFactory.decodeFile(""))
 //                        .setExtAppFileDir("Elson")
 //                        .setExtAppCacheDir("Elson")
-                        .setExtPublishDir("/Elson1")
+                        .setExtPublishDir("/Elson1", "/Elson2")
                         .setOutputFileName(FileHelper.getImageFileName("ABC.jpg"))
                         .asImage()
 //                        .asDownload()
@@ -54,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         saveBitmapTv.setOnClickListener {
 
             glideImgBitmap { bitmap ->
-                StorageFacade.storeVideoPublishDir(this, bitmap, "CBA.mp4").start()
+                StorageFacade.storeVideoPublishDir(this, bitmap, "CBA.mp4")
 
 //                StorageFacade.with(this)
 //                        .load(bitmap)

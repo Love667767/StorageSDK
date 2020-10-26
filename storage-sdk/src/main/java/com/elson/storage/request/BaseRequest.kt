@@ -71,7 +71,7 @@ abstract class BaseRequest<T>(var context: Context) {
      * @param filePath：老版本的文件存储路径
      * @param filePath_Q：Android Q对应的文件存储路径
      */
-    abstract fun setExtPublishDir(filePath: String? = null, filePath_Q: String?= null): BaseRequest<T>
+    abstract fun setExtPublishDir(filePath: String?, filePath_Q: String?): BaseRequest<T>
 
     fun setOutputFileName(fileName: String?): BaseRequest<T> {
         mOutputFileName = fileName
